@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高频词Day1 跟读音频</title>
+    <style>
+        :root {
+            --bg: #f1f8f4;
+            --card-bg: #ffffff;
+            --primary: #4caf84;
+            --primary-light: #e8f5ee;
+            --text: #2e3b32;
+            --text-secondary: #5e6b61;
+            --border: #d4e3d8;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.25s ease;
+            --active-bg: #c8e6d4;
+            --active-border: #4caf84;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px;
+            padding-bottom: 100px;
+        }
+
+        /* 顶部导航栏 */
+        .nav-bar {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            gap: 20px;
+            position: sticky;
+            top: 16px;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            background: var(--primary-light);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px;
+            color: var(--primary); transition: var(--transition);
+            user-select: none; flex-shrink: 0;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--primary); color: white; border-color: var(--primary);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.4; cursor: not-allowed;
+            background: #eef2ef; color: #a3b5a9; border-color: #d4e3d8;
+        }
+
+        .day-title {
+            font-size: 1.3rem; font-weight: 600;
+            color: var(--text); min-width: 180px; text-align: center;
+        }
+
+        /* 跟读提示 */
+        .read-along-hint {
+            width: 100%; max-width: 500px;
+            background: #fff9e0;
+            color: #7b6e2f;
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 10px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #f0e5b0;
+        }
+
+        /* 主卡片 */
+        .main-card {
+            width: 100%; max-width: 500px;
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px 18px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        .player-section { margin-bottom: 20px; }
+
+        .audio-player { display: flex; flex-direction: column; gap: 12px; }
+
+        .controls-row {
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .ctrl-btn {
+            background: var(--primary-light);
+            border: none; border-radius: 50%;
+            width: 42px; height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 18px;
+            color: var(--primary); transition: var(--transition); flex-shrink: 0;
+        }
+
+        .ctrl-btn:hover { background: var(--primary); color: white; }
+
+        .play-btn {
+            width: 50px; height: 50px; font-size: 22px;
+            background: var(--primary); color: white;
+        }
+
+        .play-btn:hover { background: #3d9b6d; }
+
+        .time-display {
+            font-size: 0.85rem; color: var(--text-secondary);
+            margin-left: auto; white-space: nowrap;
+        }
+
+        .progress-container {
+            width: 100%; height: 6px; background: #e0ebe4;
+            border-radius: 3px; cursor: pointer; position: relative;
+        }
+
+        .progress-fill {
+            height: 100%; border-radius: 3px;
+            background: var(--primary); width: 0%; transition: width 0.1s linear;
+        }
+
+        .sentences-container {
+            max-height: 280px; overflow-y: auto; padding-right: 4px;
+            scroll-behavior: smooth;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: #fafdfb;
+        }
+
+        .sentence-item {
+            padding: 12px 14px; border-bottom: 1px solid #edf3ef;
+            transition: background 0.2s; cursor: pointer;
+        }
+
+        .sentence-item:last-child { border-bottom: none; }
+
+        .sentence-item.active {
+            background: var(--active-bg);
+            border-left: 4px solid var(--active-border);
+            font-weight: 500;
+        }
+
+        .sentence-original { font-size: 1rem; color: var(--text); margin-bottom: 2px; }
+        .sentence-translation { font-size: 0.9rem; color: var(--text-secondary); }
+
+        /* 浮动迷你播放器 */
+        .mini-player {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background: var(--card-bg); border-top: 1px solid var(--border);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+            padding: 10px 16px; display: none;
+            align-items: center; justify-content: space-between;
+            z-index: 20; transition: transform 0.3s;
+        }
+
+        .mini-player.visible { display: flex; }
+
+        .mini-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+
+        .mini-play-btn {
+            background: var(--primary); border: none; border-radius: 50%;
+            width: 34px; height: 34px; color: white; font-size: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; flex-shrink: 0;
+        }
+
+        .mini-progress {
+            flex: 1; height: 4px; background: #e0ebe4; border-radius: 2px;
+            cursor: pointer; position: relative; margin: 0 8px;
+        }
+
+        .mini-progress-fill { height: 100%; border-radius: 2px; background: var(--primary); width: 0%; }
+
+        .mini-time { font-size: 0.8rem; color: var(--text-secondary); white-space: nowrap; }
+
+
+        .hidden-audio { display: none; }
+    
+        .footer-mark {
+            width: 100%; max-width: 500px; text-align: center;
+            padding: 20px 18px; margin-top: 20px;
+            background: #ffffff; border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            color: #5e6b61; font-size: 0.9rem; line-height: 1.6;
+        }
+        .footer-mark-line2 {
+            color: #c0392b;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+</style>
+</head>
+<body>
+
+    <!-- 顶部导航栏 -->
+    <div class="nav-bar">
+        <button class="nav-btn" id="prevDayBtn" title="前一天" disabled>←</button>
+        <span class="day-title" id="dayTitle">高频词 Day 1</span>
+        <button class="nav-btn" id="nextDayBtn" title="后一天" disabled>→</button>
+    </div>
+
+    <!-- 跟读提示 -->
+    <div class="read-along-hint">
+        🔊 在间隙跟读或重复英文哦！
+    </div>
+
+    <!-- 主内容卡片 -->
+    <div class="main-card" id="mainPlayerCard">
+        <div class="player-section">
+            <div class="audio-player" id="audioPlayer">
+                <div class="controls-row">
+                    <button class="ctrl-btn" id="rewindBtn" title="后退15秒">⏪</button>
+                    <button class="ctrl-btn play-btn" id="playPauseBtn">▶</button>
+                    <button class="ctrl-btn" id="forwardBtn" title="前进15秒">⏩</button>
+                    <span class="time-display" id="timeDisplay">0:00 / 0:00</span>
+                </div>
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            <audio class="hidden-audio" id="audioElement" preload="auto"></audio>
+        </div>
+
+        <div class="sentences-container" id="sentencesContainer"></div>
+    </div>
+
+    <!-- 浮动迷你播放器 -->
+    <div class="mini-player" id="miniPlayer">
+        <div class="mini-left">
+            <button class="mini-play-btn" id="miniPlayPauseBtn">▶</button>
+            <div class="mini-progress" id="miniProgressContainer">
+                <div class="mini-progress-fill" id="miniProgressFill"></div>
+            </div>
+            <span class="mini-time" id="miniTimeDisplay">0:00</span>
+        </div>
+    </div>
+
+
+    <script>
+        (function() {
+            // ============= 数据配置 =============
+            const daysData = [
+                {
+                    day: 1,
+                    title: "高频词 Day 1",
+                    audioSrc: "Day1_audio.mp3",
+                    sentences: [
+                        // 任务一：单词
+                        { original: "follow", translation: "跟随", start: 0, end: 0 },
+                        { original: "little", translation: "小的", start: 0, end: 0 },
+                        { original: "learn", translation: "学习", start: 0, end: 0 },
+                        { original: "need", translation: "需要", start: 0, end: 0 },
+                        { original: "different", translation: "不同的", start: 0, end: 0 },
+                        { original: "great", translation: "伟大的；好极了", start: 0, end: 0 },
+                        { original: "make", translation: "制造；做", start: 0, end: 0 },
+                        { original: "should", translation: "应该", start: 0, end: 0 },
+                        { original: "other", translation: "其他的", start: 0, end: 0 },
+                        { original: "right", translation: "对的；权利", start: 0, end: 0 },
+                        { original: "keep", translation: "保持；继续", start: 0, end: 0 },
+                        { original: "start", translation: "开始", start: 0, end: 0 },
+                        // 任务二：语境练习1
+                        { original: "I make my bed every morning.", translation: "我每天早上铺床。", start: 0, end: 0 },
+                        { original: "The other students are in the classroom.", translation: "其他的学生在教室里。", start: 0, end: 0 },
+                        { original: "We learn English at school.", translation: "我们在学校学习英语。", start: 0, end: 0 },
+                        { original: "You should drink more water.", translation: "你应该多喝水。", start: 0, end: 0 },
+                        { original: "She needs a new schoolbag.", translation: "她需要一个新书包。", start: 0, end: 0 },
+                        { original: "The two cats are different.", translation: "这两只猫是不同的。", start: 0, end: 0 },
+                        { original: "Keep quiet in the library.", translation: "在图书馆里保持安静。", start: 0, end: 0 },
+                        { original: "Let's start the game at nine.", translation: "我们九点开始游戏吧。", start: 0, end: 0 },
+                        { original: "My teacher is a great woman.", translation: "我的老师是一位伟大的女性。", start: 0, end: 0 },
+                        { original: "A little dog is under the chair.", translation: "一只小狗在椅子下面。", start: 0, end: 0 },
+                        { original: "That is the right way to do it.", translation: "那是做这件事的正确方法。", start: 0, end: 0 },
+                        { original: "Please follow me to the park.", translation: "请跟我来公园。", start: 0, end: 0 },
+                        // 任务三：语境练习2（无翻译）
+                        { original: "I start every day with a smile.", translation: "", start: 0, end: 0 },
+                        { original: "I need to learn different things.", translation: "", start: 0, end: 0 },
+                        { original: "My mother says I should keep trying.", translation: "", start: 0, end: 0 },
+                        { original: "At first, I make little progress.", translation: "", start: 0, end: 0 },
+                        { original: "Other children are great, but I am also great in my own way.", translation: "", start: 0, end: 0 },
+                        { original: "I follow the right steps and never give up.", translation: "", start: 0, end: 0 },
+                        { original: "I know I can make my dream come true.", translation: "", start: 0, end: 0 },
+                        { original: "A little change every day brings a great future.", translation: "", start: 0, end: 0 },
+                        { original: "We need to help each other.", translation: "", start: 0, end: 0 },
+                        { original: "I should follow kind people and learn from them.", translation: "", start: 0, end: 0 },
+                        { original: "Life is different and full of hope.", translation: "", start: 0, end: 0 }
+                    ]
+                }
+            ];
+
+            // ============= DOM 元素 =============
+            const prevBtn = document.getElementById("prevDayBtn");
+            const nextBtn = document.getElementById("nextDayBtn");
+            const dayTitleEl = document.getElementById("dayTitle");
+            const audioEl = document.getElementById("audioElement");
+            const playPauseBtn = document.getElementById("playPauseBtn");
+            const rewindBtn = document.getElementById("rewindBtn");
+            const forwardBtn = document.getElementById("forwardBtn");
+            const progressContainer = document.getElementById("progressContainer");
+            const progressFill = document.getElementById("progressFill");
+            const timeDisplay = document.getElementById("timeDisplay");
+            const sentencesContainer = document.getElementById("sentencesContainer");
+            const mainPlayerCard = document.getElementById("mainPlayerCard");
+
+            const miniPlayer = document.getElementById("miniPlayer");
+            const miniPlayPauseBtn = document.getElementById("miniPlayPauseBtn");
+            const miniProgressContainer = document.getElementById("miniProgressContainer");
+            const miniProgressFill = document.getElementById("miniProgressFill");
+            const miniTimeDisplay = document.getElementById("miniTimeDisplay");
+
+            let currentDayIndex = 0;
+            let currentSentences = [];
+            let activeSentenceIndex = -1;
+            let isPlaying = false;
+
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return "0:00";
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, "0")}`;
+            }
+
+            function updatePlayButton() {
+                const icon = isPlaying ? "⏸" : "▶";
+                playPauseBtn.textContent = icon;
+                miniPlayPauseBtn.textContent = icon;
+            }
+
+            function togglePlay() {
+                if (!audioEl.src || audioEl.src === window.location.href) {
+                    showStatus("音频文件未就绪，请稍候...", true);
+                    return;
+                }
+                if (isPlaying) {
+                    audioEl.pause();
+                } else {
+                    audioEl.play().catch(function(err) {
+                        console.error("播放失败:", err);
+                        showStatus("音频播放失败！请检查控制台", true);
+                        alert("音频无法播放，可能原因：\n1. 文件不存在或路径错误\n2. 浏览器不支持此格式\n\n请按F12打开开发者工具，查看Console中的错误信息。");
+                    });
+                }
+            }
+
+            function updateActiveSentence(currentTime) {
+                if (!currentSentences.length) return;
+                let newIndex = -1;
+                for (let i = 0; i < currentSentences.length; i++) {
+                    const s = currentSentences[i];
+                    if (s.start < s.end && currentTime >= s.start && currentTime < s.end) {
+                        newIndex = i;
+                        break;
+                    }
+                }
+                if (newIndex !== activeSentenceIndex) {
+                    const prevActive = document.querySelector(".sentence-item.active");
+                    if (prevActive) prevActive.classList.remove("active");
+                    if (newIndex >= 0) {
+                        const items = document.querySelectorAll(".sentence-item");
+                        if (items[newIndex]) {
+                            items[newIndex].classList.add("active");
+                            items[newIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+                        }
+                    }
+                    activeSentenceIndex = newIndex;
+                }
+            }
+
+            function updateProgress() {
+                const currentTime = audioEl.currentTime || 0;
+                const duration = audioEl.duration || 0;
+                const percent = duration ? (currentTime / duration) * 100 : 0;
+                progressFill.style.width = percent + "%";
+                miniProgressFill.style.width = percent + "%";
+                timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+                miniTimeDisplay.textContent = formatTime(currentTime);
+                updateActiveSentence(currentTime);
+            }
+
+            function setProgress(event, isMini = false) {
+                if (!audioEl.duration) return;
+                const container = isMini ? miniProgressContainer : progressContainer;
+                const rect = container.getBoundingClientRect();
+                const clickX = event.clientX - rect.left;
+                const width = rect.width;
+                const percent = Math.min(Math.max(clickX / width, 0), 1);
+                audioEl.currentTime = percent * audioEl.duration;
+            }
+
+            function skip(seconds) {
+                if (!audioEl.duration) return;
+                audioEl.currentTime = Math.min(Math.max(audioEl.currentTime + seconds, 0), audioEl.duration);
+            }
+
+            function renderSentences(sentences) {
+                sentencesContainer.innerHTML = "";
+                if (!sentences || sentences.length === 0) {
+                    sentencesContainer.innerHTML = '<p style="padding:20px;text-align:center;color:#888;">暂无句子数据</p>';
+                    return;
+                }
+                sentences.forEach((s, idx) => {
+                    const div = document.createElement("div");
+                    div.className = "sentence-item";
+                    const transHtml = s.translation ? `<div class="sentence-translation">${s.translation}</div>` : "";
+                    div.innerHTML = `<div class="sentence-original">${s.original}</div>${transHtml}`;
+                    div.addEventListener("click", () => {
+                        if (audioEl.duration && s.start < s.end) {
+                            audioEl.currentTime = s.start;
+                            if (!isPlaying) audioEl.play().catch(() => {});
+                        }
+                    });
+                    sentencesContainer.appendChild(div);
+                });
+                activeSentenceIndex = -1;
+            }
+
+            // URL编码函数：处理中文文件名
+            function getAudioUrl(raw) {
+                if (!raw) return "";
+                var parts = raw.split("/");
+                var encoded = "";
+                for (var i = 0; i < parts.length; i++) {
+                    if (i > 0) encoded += "/";
+                    encoded += encodeURIComponent(parts[i]);
+                }
+                return encoded;
+            }
+
+            // 显示状态信息
+            function showStatus(msg, isError) {
+                var statusEl = document.getElementById("audioStatus");
+                if (statusEl) {
+                    statusEl.textContent = msg;
+                    statusEl.style.color = isError ? "#c0392b" : "#4caf84";
+                    statusEl.style.display = "block";
+                }
+                console.log(isError ? "❌ " + msg : "✅ " + msg);
+            }
+
+            function loadDay(index) {
+                if (index < 0 || index >= daysData.length) return;
+                currentDayIndex = index;
+                const dayData = daysData[index];
+                dayTitleEl.textContent = dayData.title;
+
+                // 使用URL编码处理文件名
+                var rawSrc = dayData.audioSrc;
+                audioEl.src = getAudioUrl(rawSrc);
+                audioEl.load();
+
+                var statusEl = document.getElementById("audioStatus");
+                if (statusEl) statusEl.style.display = "none";
+
+                isPlaying = false;
+                updatePlayButton();
+                isPlaying = false;
+                updatePlayButton();
+                progressFill.style.width = "0%";
+                miniProgressFill.style.width = "0%";
+                timeDisplay.textContent = "0:00 / 0:00";
+                miniTimeDisplay.textContent = "0:00";
+                currentSentences = dayData.sentences || [];
+                renderSentences(currentSentences);
+                prevBtn.disabled = (index === 0);
+                nextBtn.disabled = (index === daysData.length - 1);
+            }
+
+            function checkMiniPlayerVisibility() {
+                if (!mainPlayerCard) return;
+                const rect = mainPlayerCard.getBoundingClientRect();
+                const isVisible = rect.bottom > 0 && rect.top < window.innerHeight;
+                if (!isVisible && audioEl.src && audioEl.duration) {
+                    miniPlayer.classList.add("visible");
+                } else {
+                    miniPlayer.classList.remove("visible");
+                }
+            }
+
+            // 事件绑定
+            playPauseBtn.addEventListener("click", togglePlay);
+            miniPlayPauseBtn.addEventListener("click", togglePlay);
+
+            audioEl.addEventListener("play", () => { isPlaying = true; updatePlayButton(); });
+            audioEl.addEventListener("pause", () => { isPlaying = false; updatePlayButton(); });
+            audioEl.addEventListener("ended", () => { isPlaying = false; updatePlayButton(); });
+            audioEl.addEventListener("timeupdate", updateProgress);
+            audioEl.addEventListener("loadedmetadata", updateProgress);
+
+            rewindBtn.addEventListener("click", () => skip(-15));
+            forwardBtn.addEventListener("click", () => skip(15));
+
+            progressContainer.addEventListener("click", (e) => setProgress(e, false));
+            miniProgressContainer.addEventListener("click", (e) => setProgress(e, true));
+
+            prevBtn.addEventListener("click", () => {
+                if (currentDayIndex > 0) loadDay(currentDayIndex - 1);
+            });
+            nextBtn.addEventListener("click", () => {
+                if (currentDayIndex < daysData.length - 1) loadDay(currentDayIndex + 1);
+            });
+
+            window.addEventListener("scroll", checkMiniPlayerVisibility);
+            window.addEventListener("resize", checkMiniPlayerVisibility);
+
+            audioEl.addEventListener("canplay", function() {
+                showStatus("音频已就绪，可以播放");
+            });
+            audioEl.addEventListener("error", function() {
+                var errMsg = "音频加载失败！";
+                if (audioEl.error) {
+                    switch(audioEl.error.code) {
+                        case 1: errMsg += "（加载被中断）"; break;
+                        case 2: errMsg += "（网络错误，可能是文件路径问题）"; break;
+                        case 3: errMsg += "（解码错误）"; break;
+                        case 4: errMsg += "（文件不存在或格式不支持）"; break;
+                    }
+                }
+                showStatus(errMsg, true);
+                isPlaying = false;
+                updatePlayButton();
+            });
+
+            // 启动
+            loadDay(0);
+            setTimeout(checkMiniPlayerVisibility, 100);
+        })();
+    </script>
+
+    <!-- 音频状态提示 -->
+    <div id="audioStatus" style="display:none; width:100%; max-width:500px; text-align:center; padding:8px; margin-bottom:10px; font-size:0.85rem;"></div>
+
+    <div class="footer-mark">
+        <div>Carolyn教英语📖原创资料</div>
+        <div class="footer-mark-line2">内部资料 严禁外传</div>
+    </div>
+
+</body>
+</html>
